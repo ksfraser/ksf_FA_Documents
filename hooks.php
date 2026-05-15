@@ -7,6 +7,7 @@ define('SS_DOCUMENTS', 121 << 8);
 
 class hooks_fa_documents extends hooks {
     var $module_name = 'fa_documents';
+    var $version = '1.0.0';
 
     function install_options($app) {
         global $path_to_root;
