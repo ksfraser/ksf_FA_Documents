@@ -51,7 +51,18 @@ function create_document(string $title, string $type, ?string $expires_at, strin
     $docId = $db->insert_id;
     
     if (function_exists('documents_after_hook')) {
-        documents_after_hook('after_save', $docId, ['entity_type' => 'document', 'action' => 'create', 'title' => $title, 'type' => $type, 'entity_ref_type' => $entity_type, 'entity_ref_id' => $entity_id]);
+        documents_after_hook('after_save', $docId, ['entity_type' => 'document', 'action' => 'create', 'data' => [
+            'id'           => $docId,
+            'title'        => $title,
+            'type'         => $type,
+            'expires_at'   => $expires_at,
+            'ack_required' => $ack_required,
+            'ack_deadline' => $ack_deadline,
+            'entity_type'  => $entity_type,
+            'entity_id'    => $entity_id,
+            'owner'        => $owner,
+            'group_id'     => $group_id,
+        ]]);
     }
     
     return $docId;
@@ -118,7 +129,18 @@ function update_document(int $id, string $title, string $type, ?string $expires_
     $result = $db->query($sql);
     
     if ($result && function_exists('documents_after_hook')) {
-        documents_after_hook('after_save', $id, ['entity_type' => 'document', 'action' => 'update', 'title' => $title, 'type' => $type]);
+        documents_after_hook('after_save', $id, ['entity_type' => 'document', 'action' => 'update', 'data' => [
+            'id'           => $id,
+            'title'        => $title,
+            'type'         => $type,
+            'expires_at'   => $expires_at,
+            'ack_required' => $ack_required,
+            'ack_deadline' => $ack_deadline,
+            'entity_type'  => $entity_type,
+            'entity_id'    => $entity_id,
+            'owner'        => $owner,
+            'group_id'     => $group_id,
+        ]]);
     }
     
     return $result;
@@ -416,7 +438,15 @@ function add_document_shared_attachment(int $doc_id, string $source_file, string
         ]);
         if ($result !== null) {
             if (function_exists('documents_after_hook')) {
-                documents_after_hook('after_save', $doc_id, ['entity_type' => 'document', 'action' => 'attach', 'attachment_id' => $result['id'] ?? null]);
+                $attachData = [
+                    'doc_id'        => $doc_id,
+                    'source_file'   => $hookData['source_file'] ?? $source_file,
+                    'original_name' => $hookData['original_name'] ?? $original_name,
+                ];
+                if (isset($result['id'])) {
+                    $attachData['attachment_id'] = $result['id'];
+                }
+                documents_after_hook('after_save', $doc_id, ['entity_type' => 'document', 'action' => 'attach', 'data' => $attachData]);
             }
             return $result;
         }
