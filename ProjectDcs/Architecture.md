@@ -423,6 +423,64 @@ Document Upload → Link to Task(s) → Employee Acknowledgment → Complete Tas
 - New document notifications
 - Acknowledgment confirmation
 
+### 8.6 Event Dispatching (Generic SuiteCRM-Style Hooks)
+
+The module dispatches generic lifecycle hooks with `entity_type` and `action` in the payload.
+Events are dispatched via `includes/events.inc` through FA's `hook_invoke_first`/`hook_invoke_all`.
+
+#### Generic Lifecycle Hooks
+
+| Hook Name | Direction | entity_type | action | Fired |
+|-----------|-----------|-------------|--------|-------|
+| `before_save` | hook_invoke_first (filter) | `document` | `create` | Before document INSERT |
+| `after_save` | hook_invoke_all | `document` | `create` | After document INSERT |
+| `before_save` | hook_invoke_first | `document` | `update` | Before document UPDATE |
+| `after_save` | hook_invoke_all | `document` | `update` | After document UPDATE |
+| `before_delete` | hook_invoke_first | `document` | — | Before document DELETE |
+| `after_delete` | hook_invoke_all | `document` | — | After document DELETE |
+| `after_load` | hook_invoke_first | `document` | `load` | After document DB fetch |
+| `before_save` | hook_invoke_first | `document_link` | `create` | Before link INSERT |
+| `after_save` | hook_invoke_all | `document_link` | `create` | After link INSERT |
+| `before_delete` | hook_invoke_first | `document_link` | — | Before link DELETE |
+| `after_delete` | hook_invoke_all | `document_link` | — | After link DELETE |
+| `before_save` | hook_invoke_first | `document` | `attach` | Before shared attachment upload |
+| `after_save` | hook_invoke_all | `document` | `attach` | After shared attachment upload |
+
+#### Entity Type Registration
+
+The hooks class implements `_getAdvertisedValues()` via `HookQueryProviderTrait`:
+
+```
+documents.entity_types → ['document', 'document_link']
+documents.events      → ['before_save', 'after_save', 'before_delete', 'after_delete', 'after_load']
+```
+
+#### Payload Structure
+
+```php
+$payload = [
+    'event'       => 'after_save',
+    'module'      => 'documents',
+    'entity_type' => 'document',
+    'entity_id'   => $docId,
+    'action'      => 'create',
+    'timestamp'   => date('Y-m-d H:i:s'),
+    // ... entity-specific fields
+];
+
+// Dual dispatch:
+hook_invoke_all($hookName, $payload);
+hook_invoke_all('ksf_crud_event', $payload);  // Workflow integration
+```
+
+#### After-Load Enrichment
+
+```php
+$payload = ['entity_type' => 'document', 'action' => 'load', 'data' => $row];
+$modified = hook_invoke_first('after_load', $payload);
+$row = is_array($modified) ? ($modified['data'] ?? $modified) : $row;
+```
+
 ## 9. Security Architecture
 
 ### 9.1 Input Validation

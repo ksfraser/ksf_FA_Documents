@@ -9,6 +9,27 @@ function create_document(string $title, string $type, ?string $expires_at, strin
 {
     global $db, $db_escape;
     
+    $hookData = documents_before_hook('before_save', array_merge(['entity_type' => 'document', 'action' => 'create'], [
+        'title'        => $title,
+        'type'         => $type,
+        'expires_at'   => $expires_at,
+        'ack_required' => $ack_required,
+        'ack_deadline' => $ack_deadline,
+        'entity_type'  => $entity_type,
+        'entity_id'    => $entity_id,
+        'owner'        => $owner,
+        'group_id'     => $group_id,
+    ]));
+    $title = $hookData['title'];
+    $type = $hookData['type'];
+    $expires_at = $hookData['expires_at'];
+    $ack_required = $hookData['ack_required'];
+    $ack_deadline = $hookData['ack_deadline'];
+    $entity_type = $hookData['entity_type'];
+    $entity_id = $hookData['entity_id'];
+    $owner = $hookData['owner'];
+    $group_id = $hookData['group_id'];
+    
     $sql = "INSERT INTO " . TB_PREF . "documents 
         (title, type, status, created_by, created_at, expires_at, ack_required, ack_deadline, entity_type, entity_id, owner, group_id)
         VALUES (
@@ -29,13 +50,8 @@ function create_document(string $title, string $type, ?string $expires_at, strin
     $db->query($sql);
     $docId = $db->insert_id;
     
-    if (function_exists('documents_dispatch_event')) {
-        documents_dispatch_event('document_created', $docId, [
-            'title'     => $title,
-            'type'      => $type,
-            'entity_type' => $entity_type,
-            'entity_id'   => $entity_id,
-        ]);
+    if (function_exists('documents_after_hook')) {
+        documents_after_hook('after_save', $docId, ['entity_type' => 'document', 'action' => 'create', 'title' => $title, 'type' => $type, 'entity_ref_type' => $entity_type, 'entity_ref_id' => $entity_id]);
     }
     
     return $docId;
@@ -49,7 +65,13 @@ function get_document(int $id): ?array
     $result = $db->query($sql);
     
     if ($result && $db->num_rows($result) > 0) {
-        return $db->fetch($result);
+        $row = $db->fetch($result);
+        if (function_exists('hook_invoke_first')) {
+            $payload = ['entity_type' => 'document', 'action' => 'load', 'data' => $row];
+            $modified = hook_invoke_first('after_load', $payload);
+            $row = is_array($modified) ? ($modified['data'] ?? $modified) : $row;
+        }
+        return $row;
     }
     return null;
 }
@@ -57,6 +79,28 @@ function get_document(int $id): ?array
 function update_document(int $id, string $title, string $type, ?string $expires_at, string $ack_required, ?string $ack_deadline, string $entity_type = '', ?int $entity_id = null, ?int $owner = null, ?int $group_id = null): bool
 {
     global $db, $db_escape;
+    
+    $hookData = documents_before_hook('before_save', array_merge(['entity_type' => 'document', 'action' => 'update'], [
+        'doc_id'       => $id,
+        'title'        => $title,
+        'type'         => $type,
+        'expires_at'   => $expires_at,
+        'ack_required' => $ack_required,
+        'ack_deadline' => $ack_deadline,
+        'entity_type'  => $entity_type,
+        'entity_id'    => $entity_id,
+        'owner'        => $owner,
+        'group_id'     => $group_id,
+    ]));
+    $title = $hookData['title'];
+    $type = $hookData['type'];
+    $expires_at = $hookData['expires_at'];
+    $ack_required = $hookData['ack_required'];
+    $ack_deadline = $hookData['ack_deadline'];
+    $entity_type = $hookData['entity_type'];
+    $entity_id = $hookData['entity_id'];
+    $owner = $hookData['owner'];
+    $group_id = $hookData['group_id'];
     
     $sql = "UPDATE " . TB_PREF . "documents SET
         title = " . $db_escape($title) . ",
@@ -73,11 +117,8 @@ function update_document(int $id, string $title, string $type, ?string $expires_
     
     $result = $db->query($sql);
     
-    if ($result && function_exists('documents_dispatch_event')) {
-        documents_dispatch_event('document_updated', $id, [
-            'title'     => $title,
-            'type'      => $type,
-        ]);
+    if ($result && function_exists('documents_after_hook')) {
+        documents_after_hook('after_save', $id, ['entity_type' => 'document', 'action' => 'update', 'title' => $title, 'type' => $type]);
     }
     
     return $result;
@@ -222,6 +263,12 @@ function link_document(int $doc_id, string $entity_type, int $entity_id): int
         throw new \RuntimeException("Document {$doc_id} not found");
     }
     
+    documents_before_hook('before_save', array_merge(['entity_type' => 'document_link', 'action' => 'create'], [
+        'doc_id'      => $doc_id,
+        'entity_type' => $entity_type,
+        'entity_id'   => $entity_id,
+    ]));
+    
     global $db;
     $sql = "INSERT IGNORE INTO " . TB_PREF . "fa_document_links
         (doc_id, entity_type, entity_id)
@@ -232,12 +279,8 @@ function link_document(int $doc_id, string $entity_type, int $entity_id): int
     $db->query($sql);
     $linkId = $db->insert_id;
     
-    if (function_exists('documents_dispatch_event')) {
-        documents_dispatch_event('document_linked', $doc_id, [
-            'entity_type' => $entity_type,
-            'entity_id'   => $entity_id,
-            'link_id'     => $linkId,
-        ]);
+    if (function_exists('documents_after_hook')) {
+        documents_after_hook('after_save', $doc_id, ['entity_type' => 'document_link', 'action' => 'create', 'linked_entity_type' => $entity_type, 'linked_entity_id' => $entity_id, 'link_id' => $linkId]);
     }
     
     return $linkId;
@@ -248,6 +291,12 @@ function link_document(int $doc_id, string $entity_type, int $entity_id): int
  */
 function unlink_document(int $doc_id, string $entity_type, int $entity_id): void
 {
+    documents_before_hook('before_delete', array_merge(['entity_type' => 'document_link'], [
+        'doc_id'      => $doc_id,
+        'entity_type' => $entity_type,
+        'entity_id'   => $entity_id,
+    ]));
+    
     global $db;
     $sql = "DELETE FROM " . TB_PREF . "fa_document_links
         WHERE doc_id = " . intval($doc_id) . "
@@ -256,11 +305,8 @@ function unlink_document(int $doc_id, string $entity_type, int $entity_id): void
     
     $db->query($sql);
     
-    if (function_exists('documents_dispatch_event')) {
-        documents_dispatch_event('document_unlinked', $doc_id, [
-            'entity_type' => $entity_type,
-            'entity_id'   => $entity_id,
-        ]);
+    if (function_exists('documents_after_hook')) {
+        documents_after_hook('after_delete', $doc_id, ['entity_type' => 'document_link', 'linked_entity_type' => $entity_type, 'linked_entity_id' => $entity_id]);
     }
 }
 
@@ -347,30 +393,37 @@ function document_can_edit(int $doc_id, ?int $user_id = null): bool
  */
 function add_document_shared_attachment(int $doc_id, string $source_file, string $original_name)
 {
+    $hookData = [];
+    if (function_exists('documents_before_hook')) {
+        $hookData = documents_before_hook('before_save', array_merge(['entity_type' => 'document', 'action' => 'attach'], [
+            'doc_id'        => $doc_id,
+            'source_file'   => $source_file,
+            'original_name' => $original_name,
+        ]));
+    }
+    
     // Try via hook first - ksf_FA_Attachments listens for this
     if (function_exists('hook_invoke_first')) {
         $result = hook_invoke_first('document_upload_attachment', [
             'doc_id'      => $doc_id,
             'entity_type' => 'document',
             'entity_id'   => $doc_id,
-            'filename'    => $original_name,
-            'file_path'   => $source_file,
-            'file_size'   => file_exists($source_file) ? filesize($source_file) : 0,
-            'mime_type'   => mime_content_type($source_file) ?: 'application/octet-stream',
+            'filename'    => $hookData['original_name'] ?? $original_name,
+            'file_path'   => $hookData['source_file'] ?? $source_file,
+            'file_size'   => file_exists($hookData['source_file'] ?? $source_file) ? filesize($hookData['source_file'] ?? $source_file) : 0,
+            'mime_type'   => mime_content_type($hookData['source_file'] ?? $source_file) ?: 'application/octet-stream',
             'uploaded_by' => (string) ($_SESSION['wa_current_user']->user ?? 'system'),
         ]);
         if ($result !== null) {
-            if (function_exists('documents_dispatch_event')) {
-                documents_dispatch_event('document_attachment_uploaded', $doc_id, [
-                    'attachment_id' => $result['id'] ?? null,
-                ]);
+            if (function_exists('documents_after_hook')) {
+                documents_after_hook('after_save', $doc_id, ['entity_type' => 'document', 'action' => 'attach', 'attachment_id' => $result['id'] ?? null]);
             }
             return $result;
         }
     }
     
     // Fallback: legacy fa_document_attachments
-    return add_document_attachment($doc_id, $source_file, $original_name);
+    return add_document_attachment($doc_id, $hookData['source_file'] ?? $source_file, $hookData['original_name'] ?? $original_name);
 }
 
 /**
