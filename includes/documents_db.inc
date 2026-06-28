@@ -27,7 +27,18 @@ function create_document(string $title, string $type, ?string $expires_at, strin
         )";
     
     $db->query($sql);
-    return $db->insert_id;
+    $docId = $db->insert_id;
+    
+    if (function_exists('documents_dispatch_event')) {
+        documents_dispatch_event('document_created', $docId, [
+            'title'     => $title,
+            'type'      => $type,
+            'entity_type' => $entity_type,
+            'entity_id'   => $entity_id,
+        ]);
+    }
+    
+    return $docId;
 }
 
 function get_document(int $id): ?array
@@ -60,7 +71,16 @@ function update_document(int $id, string $title, string $type, ?string $expires_
         updated_at = NOW()
         WHERE id = " . intval($id);
     
-    return $db->query($sql);
+    $result = $db->query($sql);
+    
+    if ($result && function_exists('documents_dispatch_event')) {
+        documents_dispatch_event('document_updated', $id, [
+            'title'     => $title,
+            'type'      => $type,
+        ]);
+    }
+    
+    return $result;
 }
 
 function get_documents_list(?string $type = null, string $search = '', int $limit = 100): ?object
@@ -210,7 +230,17 @@ function link_document(int $doc_id, string $entity_type, int $entity_id): int
                 " . intval($entity_id) . ")";
     
     $db->query($sql);
-    return $db->insert_id;
+    $linkId = $db->insert_id;
+    
+    if (function_exists('documents_dispatch_event')) {
+        documents_dispatch_event('document_linked', $doc_id, [
+            'entity_type' => $entity_type,
+            'entity_id'   => $entity_id,
+            'link_id'     => $linkId,
+        ]);
+    }
+    
+    return $linkId;
 }
 
 /**
@@ -225,6 +255,13 @@ function unlink_document(int $doc_id, string $entity_type, int $entity_id): void
         AND entity_id = " . intval($entity_id);
     
     $db->query($sql);
+    
+    if (function_exists('documents_dispatch_event')) {
+        documents_dispatch_event('document_unlinked', $doc_id, [
+            'entity_type' => $entity_type,
+            'entity_id'   => $entity_id,
+        ]);
+    }
 }
 
 /**
@@ -310,34 +347,30 @@ function document_can_edit(int $doc_id, ?int $user_id = null): bool
  */
 function add_document_shared_attachment(int $doc_id, string $source_file, string $original_name)
 {
-    if (!class_exists('\\Ksfraser\\Attachment\\Service\\AttachmentService')) {
-        return add_document_attachment($doc_id, $source_file, $original_name);
-    }
-    
-    $service = new \Ksfraser\Attachment\Service\AttachmentService();
-    $mime_type = mime_content_type($source_file) ?: 'application/octet-stream';
-    $file_size = file_exists($source_file) ? filesize($source_file) : 0;
-    
-    $storage_path = 'documents/' . $doc_id . '/' . uniqid() . '_' . $original_name;
-    $dest_dir = dirname(__FILE__) . '/../attachments/' . $storage_path;
-    if (!is_dir(dirname($dest_dir))) {
-        mkdir(dirname($dest_dir), 0755, true);
-    }
-    copy($source_file, $dest_dir);
-    
-    try {
-        $att = $service->addAttachment('document', $doc_id, [
+    // Try via hook first - ksf_FA_Attachments listens for this
+    if (function_exists('hook_invoke_first')) {
+        $result = hook_invoke_first('document_upload_attachment', [
+            'doc_id'      => $doc_id,
+            'entity_type' => 'document',
+            'entity_id'   => $doc_id,
             'filename'    => $original_name,
-            'file_path'   => $storage_path,
-            'file_size'   => $file_size,
-            'mime_type'   => $mime_type,
+            'file_path'   => $source_file,
+            'file_size'   => file_exists($source_file) ? filesize($source_file) : 0,
+            'mime_type'   => mime_content_type($source_file) ?: 'application/octet-stream',
             'uploaded_by' => (string) ($_SESSION['wa_current_user']->user ?? 'system'),
         ]);
-        return $att->toArray();
-    } catch (\Throwable $e) {
-        error_log('Documents: shared attachment failed: ' . $e->getMessage());
-        return false;
+        if ($result !== null) {
+            if (function_exists('documents_dispatch_event')) {
+                documents_dispatch_event('document_attachment_uploaded', $doc_id, [
+                    'attachment_id' => $result['id'] ?? null,
+                ]);
+            }
+            return $result;
+        }
     }
+    
+    // Fallback: legacy fa_document_attachments
+    return add_document_attachment($doc_id, $source_file, $original_name);
 }
 
 /**
@@ -345,17 +378,16 @@ function add_document_shared_attachment(int $doc_id, string $source_file, string
  */
 function get_document_shared_attachments(int $doc_id): array
 {
-    if (!class_exists('\\Ksfraser\\Attachment\\Service\\AttachmentService')) {
-        return [];
+    // Try via hook first
+    if (function_exists('hook_invoke_first')) {
+        $result = hook_invoke_first('document_get_attachments', [
+            'doc_id'      => $doc_id,
+            'entity_type' => 'document',
+            'entity_id'   => $doc_id,
+        ]);
+        if ($result !== null) {
+            return $result;
+        }
     }
-    
-    $service = new \Ksfraser\Attachment\Service\AttachmentService();
-    try {
-        $attachments = $service->getAttachments('document', $doc_id);
-        return array_map(function ($a) {
-            return $a->toArray();
-        }, $attachments);
-    } catch (\Throwable $e) {
-        return [];
-    }
+    return [];
 }

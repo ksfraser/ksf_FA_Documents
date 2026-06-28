@@ -28,6 +28,8 @@
 
 define('SS_ksf_FA_Documents', 121 << 8);
 
+require_once __DIR__ . '/includes/events.inc';
+
 class hooks_ksf_FA_Documents extends hooks {
     var $module_name = 'ksf_FA_Documents';
     var $version = '1.0.0';
@@ -65,6 +67,27 @@ class hooks_ksf_FA_Documents extends hooks {
         $security_areas['SA_DOCUMENTS_VIEW'] = array(SS_ksf_FA_Documents | 1, _("View documents"));
         $security_areas['SA_DOCUMENTS_MANAGE'] = array(SS_ksf_FA_Documents | 2, _("Manage documents"));
         return array($security_areas, $security_sections);
+    }
+
+    /**
+     * Handle document_upload_attachment - fallback to legacy attachment storage
+     * if ksf_FA_Attachments is not installed.
+     */
+    function document_upload_attachment($payload)
+    {
+        // If Attachments handled it (result is an array), skip
+        if (is_array($payload) && isset($payload['attachment_id'])) {
+            return null;
+        }
+        // Fallback: use legacy document_attachments table
+        if (!empty($payload['file_path']) && !empty($payload['filename'])) {
+            add_document_attachment(
+                (int) ($payload['doc_id'] ?? $payload['entity_id'] ?? 0),
+                $payload['file_path'],
+                $payload['filename']
+            );
+        }
+        return null;
     }
 
     /**
