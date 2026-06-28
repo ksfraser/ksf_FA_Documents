@@ -5,12 +5,12 @@
  * Database access functions for Documents module
  */
 
-function create_document(string $title, string $type, ?string $expires_at, string $ack_required, ?string $ack_deadline, string $entity_type = '', ?int $entity_id = null): int
+function create_document(string $title, string $type, ?string $expires_at, string $ack_required, ?string $ack_deadline, string $entity_type = '', ?int $entity_id = null, ?int $owner = null, ?int $group_id = null): int
 {
     global $db, $db_escape;
     
     $sql = "INSERT INTO " . TB_PREF . "documents 
-        (title, type, status, created_by, created_at, expires_at, ack_required, ack_deadline, entity_type, entity_id)
+        (title, type, status, created_by, created_at, expires_at, ack_required, ack_deadline, entity_type, entity_id, owner, group_id)
         VALUES (
             " . $db_escape($title) . ",
             " . $db_escape($type) . ",
@@ -21,7 +21,9 @@ function create_document(string $title, string $type, ?string $expires_at, strin
             " . $db_escape($ack_required) . ",
             " . ($ack_deadline ? $db_escape($ack_deadline) : 'NULL') . ",
             " . ($entity_type ? $db_escape($entity_type) : 'NULL') . ",
-            " . ($entity_id ? intval($entity_id) : 'NULL') . "
+            " . ($entity_id ? intval($entity_id) : 'NULL') . ",
+            " . ($owner !== null ? intval($owner) : 'NULL') . ",
+            " . ($group_id !== null ? intval($group_id) : 'NULL') . "
         )";
     
     $db->query($sql);
@@ -41,7 +43,7 @@ function get_document(int $id): ?array
     return null;
 }
 
-function update_document(int $id, string $title, string $type, ?string $expires_at, string $ack_required, ?string $ack_deadline, string $entity_type = '', ?int $entity_id = null): bool
+function update_document(int $id, string $title, string $type, ?string $expires_at, string $ack_required, ?string $ack_deadline, string $entity_type = '', ?int $entity_id = null, ?int $owner = null, ?int $group_id = null): bool
 {
     global $db, $db_escape;
     
@@ -53,6 +55,8 @@ function update_document(int $id, string $title, string $type, ?string $expires_
         ack_deadline = " . ($ack_deadline ? $db_escape($ack_deadline) : 'NULL') . ",
         entity_type = " . ($entity_type ? $db_escape($entity_type) : 'NULL') . ",
         entity_id = " . ($entity_id ? intval($entity_id) : 'NULL') . ",
+        owner = " . ($owner !== null ? intval($owner) : 'NULL') . ",
+        group_id = " . ($group_id !== null ? intval($group_id) : 'NULL') . ",
         updated_at = NOW()
         WHERE id = " . intval($id);
     
@@ -180,4 +184,178 @@ function get_expiring_documents(int $days = 30): ?object
         ORDER BY expires_at ASC";
     
     return $db->query($sql);
+}
+
+/**
+ * Link a document to an entity (multi-entity support)
+ *
+ * @param int    $doc_id
+ * @param string $entity_type
+ * @param int    $entity_id
+ * @return int   Link ID
+ * @throws RuntimeException If document not found
+ */
+function link_document(int $doc_id, string $entity_type, int $entity_id): int
+{
+    $doc = get_document($doc_id);
+    if (!$doc) {
+        throw new \RuntimeException("Document {$doc_id} not found");
+    }
+    
+    global $db;
+    $sql = "INSERT IGNORE INTO " . TB_PREF . "fa_document_links
+        (doc_id, entity_type, entity_id)
+        VALUES (" . intval($doc_id) . ",
+                " . $db->escape($entity_type) . ",
+                " . intval($entity_id) . ")";
+    
+    $db->query($sql);
+    return $db->insert_id;
+}
+
+/**
+ * Unlink a document from an entity
+ */
+function unlink_document(int $doc_id, string $entity_type, int $entity_id): void
+{
+    global $db;
+    $sql = "DELETE FROM " . TB_PREF . "fa_document_links
+        WHERE doc_id = " . intval($doc_id) . "
+        AND entity_type = " . $db->escape($entity_type) . "
+        AND entity_id = " . intval($entity_id);
+    
+    $db->query($sql);
+}
+
+/**
+ * Get all entities linked to a document
+ *
+ * @param int $doc_id
+ * @return array
+ */
+function get_document_linked_entities(int $doc_id): array
+{
+    global $db;
+    
+    $sql = "SELECT entity_type, entity_id FROM " . TB_PREF . "fa_document_links
+        WHERE doc_id = " . intval($doc_id);
+    
+    $result = $db->query($sql);
+    $entities = [];
+    if ($result && $db->num_rows($result) > 0) {
+        while ($row = $db->fetch($result)) {
+            $entities[] = [
+                'entity_type' => $row['entity_type'],
+                'entity_id'   => (int) $row['entity_id'],
+            ];
+        }
+    }
+    return $entities;
+}
+
+/**
+ * ACL: Check if a user can view a document
+ */
+function document_can_view(int $doc_id, ?int $user_id = null): bool
+{
+    if ($user_id === null) {
+        $user_id = (int) ($_SESSION['wa_current_user']->user ?? 0);
+    }
+    
+    $doc = get_document($doc_id);
+    if (!$doc) {
+        return false;
+    }
+    
+    if (!empty($doc['owner']) && (int) $doc['owner'] === $user_id) {
+        return true;
+    }
+    
+    if (empty($doc['owner'])) {
+        return true;
+    }
+    
+    return false;
+}
+
+/**
+ * ACL: Check if a user can edit a document
+ */
+function document_can_edit(int $doc_id, ?int $user_id = null): bool
+{
+    if ($user_id === null) {
+        $user_id = (int) ($_SESSION['wa_current_user']->user ?? 0);
+    }
+    
+    $doc = get_document($doc_id);
+    if (!$doc) {
+        return false;
+    }
+    
+    if (!empty($doc['owner']) && (int) $doc['owner'] === $user_id) {
+        return true;
+    }
+    
+    return false;
+}
+
+/**
+ * Upload attachment via shared fa_attachments service
+ * Delegates to ksf_FA_Attachments module
+ *
+ * @param int    $doc_id
+ * @param string $source_file   Path to the uploaded file
+ * @param string $original_name Original filename
+ * @return array|false
+ */
+function add_document_shared_attachment(int $doc_id, string $source_file, string $original_name)
+{
+    if (!class_exists('\\Ksfraser\\Attachment\\Service\\AttachmentService')) {
+        return add_document_attachment($doc_id, $source_file, $original_name);
+    }
+    
+    $service = new \Ksfraser\Attachment\Service\AttachmentService();
+    $mime_type = mime_content_type($source_file) ?: 'application/octet-stream';
+    $file_size = file_exists($source_file) ? filesize($source_file) : 0;
+    
+    $storage_path = 'documents/' . $doc_id . '/' . uniqid() . '_' . $original_name;
+    $dest_dir = dirname(__FILE__) . '/../attachments/' . $storage_path;
+    if (!is_dir(dirname($dest_dir))) {
+        mkdir(dirname($dest_dir), 0755, true);
+    }
+    copy($source_file, $dest_dir);
+    
+    try {
+        $att = $service->addAttachment('document', $doc_id, [
+            'filename'    => $original_name,
+            'file_path'   => $storage_path,
+            'file_size'   => $file_size,
+            'mime_type'   => $mime_type,
+            'uploaded_by' => (string) ($_SESSION['wa_current_user']->user ?? 'system'),
+        ]);
+        return $att->toArray();
+    } catch (\Throwable $e) {
+        error_log('Documents: shared attachment failed: ' . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Get shared attachments for a document
+ */
+function get_document_shared_attachments(int $doc_id): array
+{
+    if (!class_exists('\\Ksfraser\\Attachment\\Service\\AttachmentService')) {
+        return [];
+    }
+    
+    $service = new \Ksfraser\Attachment\Service\AttachmentService();
+    try {
+        $attachments = $service->getAttachments('document', $doc_id);
+        return array_map(function ($a) {
+            return $a->toArray();
+        }, $attachments);
+    } catch (\Throwable $e) {
+        return [];
+    }
 }

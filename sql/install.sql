@@ -68,3 +68,35 @@ CREATE TABLE IF NOT EXISTS `fa_document_versions` (
 INSERT INTO `fa_modules` (`name`, `version`, `enabled`, `installed`) VALUES
 ('Documents', '1.0.0', 1, NOW())
 ON DUPLICATE KEY UPDATE `version` = '1.0.0', `installed` = NOW();
+
+-- ============================================================
+-- v2.0.0: Multi-entity links, ACL, shared attachments
+-- ============================================================
+
+-- Add ACL columns to fa_documents
+ALTER TABLE `@TB_PREF@fa_documents`
+    ADD COLUMN `owner` INT NULL COMMENT 'FK to FA users.owner',
+    ADD COLUMN `group_id` INT NULL COMMENT 'Access group ID for RBAC',
+    ADD INDEX `idx_owner` (`owner`);
+
+-- Multi-entity link table (replaces old entity_type/entity_id columns)
+CREATE TABLE IF NOT EXISTS `@TB_PREF@fa_document_links` (
+    `id`            INT           NOT NULL AUTO_INCREMENT,
+    `doc_id`        INT           NOT NULL COMMENT 'FK to fa_documents.id',
+    `entity_type`   VARCHAR(64)   NOT NULL COMMENT 'Entity type (debtor, employee, project, etc.)',
+    `entity_id`     INT           NOT NULL COMMENT 'FK to entity record',
+    `created_at`    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    INDEX `idx_doc` (`doc_id`),
+    INDEX `idx_entity` (`entity_type`, `entity_id`),
+    UNIQUE KEY `uq_doc_entity` (`doc_id`, `entity_type`, `entity_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Multi-entity links for documents';
+
+-- Migration data: copy existing entity_type/entity_id to fa_document_links
+INSERT INTO `@TB_PREF@fa_document_links` (doc_id, entity_type, entity_id, created_at)
+    SELECT id, entity_type, entity_id, created_at
+    FROM `@TB_PREF@fa_documents`
+    WHERE entity_type IS NOT NULL AND entity_id IS NOT NULL
+    AND entity_type != '' AND entity_id != 0
+ON DUPLICATE KEY UPDATE id = id;

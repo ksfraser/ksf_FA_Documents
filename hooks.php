@@ -61,15 +61,9 @@ class hooks_ksf_FA_Documents extends hooks {
      * @return array [0] => $security_areas, [1] => $security_sections
      */
     function install_access() {
-        $security_sections[SS_ksf_FA_Documents] = _("");
-        $security_areas['SA_ksf_FA_DocumentsVIEW'] = array(
-            SS_ksf_FA_Documents | 1, 
-            _("View ")
-        );
-        $security_areas['SA_ksf_FA_DocumentsMANAGE'] = array(
-            SS_ksf_FA_Documents | 2, 
-            _("Manage ")
-        );
+        $security_sections[SS_ksf_FA_Documents] = _("Documents");
+        $security_areas['SA_DOCUMENTS_VIEW'] = array(SS_ksf_FA_Documents | 1, _("View documents"));
+        $security_areas['SA_DOCUMENTS_MANAGE'] = array(SS_ksf_FA_Documents | 2, _("Manage documents"));
         return array($security_areas, $security_sections);
     }
 
