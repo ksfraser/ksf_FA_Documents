@@ -37,6 +37,7 @@ require_once __DIR__ . '/includes/events.inc';
 
 class hooks_ksf_FA_Documents extends hooks {
     use \Ksfraser\Traits\HookQueryProviderTrait;
+    use \ksfraser\FrontAccounting\Common\Traits\GPGEncryptionTrait;
 
     var $module_name = 'ksf_FA_Documents';
     var $version = '1.0.0';
@@ -93,6 +94,14 @@ class hooks_ksf_FA_Documents extends hooks {
                 $payload['file_path'],
                 $payload['filename']
             );
+
+            if ($this->gpgIsAvailable()) {
+                $this->gpgTrackFileUpload(
+                    $payload['file_path'],
+                    'document',
+                    (int) ($payload['entity_id'] ?? 0)
+                );
+            }
         }
         return null;
     }
