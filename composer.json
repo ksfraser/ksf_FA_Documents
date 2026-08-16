@@ -6,6 +6,7 @@
     "require": {
         "php": ">=7.4",
         "ksfraser/ksf-fa-common": "@dev",
+        "ksfraser/ksf_gpg": "@dev",
         "ksfraser/traits": "*"
     },
     "require-dev": {
@@ -22,6 +23,10 @@
         {
             "type": "path",
             "url": "../Traits"
+        },
+        {
+            "type": "path",
+            "url": "../ksf_GPG"
         }
     ]
 }

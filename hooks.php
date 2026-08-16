@@ -37,7 +37,7 @@ require_once __DIR__ . '/includes/events.inc';
 
 class hooks_ksf_FA_Documents extends hooks {
     use \Ksfraser\Traits\HookQueryProviderTrait;
-    use \ksfraser\FrontAccounting\Common\Traits\GPGEncryptionTrait;
+    use \ksfraser\GPG\Traits\GPGEncryptionTrait;
 
     var $module_name = 'ksf_FA_Documents';
     var $version = '1.0.0';
