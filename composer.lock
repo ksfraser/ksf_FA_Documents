@@ -4,8 +4,97 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "53144a24c5e28a8b60451284ff808071",
+    "content-hash": "1c2554707af03e2c11912a417032599c",
     "packages": [
+        {
+            "name": "ksfraser/exceptions",
+            "version": "v1.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ksfraser/Exceptions.git",
+                "reference": "04052a8ac7cb595df427dfb68c229e163cbe401c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ksfraser/Exceptions/zipball/04052a8ac7cb595df427dfb68c229e163cbe401c",
+                "reference": "04052a8ac7cb595df427dfb68c229e163cbe401c",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.3"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Ksfraser\\Exceptions\\": "src/Ksfraser/Exceptions/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Kevin Fraser",
+                    "email": "ksfraser@example.com"
+                }
+            ],
+            "description": "A comprehensive exception library for ksfraser projects with factory methods for domain-specific errors.",
+            "support": {
+                "issues": "https://github.com/ksfraser/Exceptions/issues",
+                "source": "https://github.com/ksfraser/Exceptions/tree/v1.3.0"
+            },
+            "time": "2026-05-09T22:11:29+00:00"
+        },
+        {
+            "name": "ksfraser/ksf-fa-common",
+            "version": "1.0.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/ksfraser/ksf_FA_Common.git",
+                "reference": "7178c414635861c49e9cc38b279d4cbee867ed14"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/ksfraser/ksf_FA_Common/zipball/7178c414635861c49e9cc38b279d4cbee867ed14",
+                "reference": "7178c414635861c49e9cc38b279d4cbee867ed14",
+                "shasum": ""
+            },
+            "require": {
+                "ksfraser/exceptions": "^1.3",
+                "php": ">=7.3"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^10.0"
+            },
+            "type": "library",
+            "extra": {
+                "ksf": {
+                    "module-type": "platform-common"
+                }
+            },
+            "autoload": {
+                "files": [
+                    "src/logging_functions.php"
+                ],
+                "psr-4": {
+                    "KsfCommon\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "proprietary"
+            ],
+            "description": "Shared FrontAccounting platform utilities, contracts, and extension points for the KSF ecosystem",
+            "support": {
+                "issues": "https://github.com/ksfraser/ksf_FA_Common/issues",
+                "source": "https://github.com/ksfraser/ksf_FA_Common/tree/1.0.3"
+            },
+            "time": "2026-07-21T00:26:55+00:00"
+        },
         {
             "name": "ksfraser/traits",
             "version": "dev-main",
@@ -1888,7 +1977,9 @@
     ],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": [],
+    "stability-flags": {
+        "ksfraser/ksf-fa-common": 20
+    },
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
