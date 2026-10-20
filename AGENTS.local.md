@@ -8,8 +8,8 @@
 ```
 ksf_FA_Documents/
 ├── sql/
-│   ├── fa_documents.sql
-│   └── fa_document_links.sql
+│   ├── ksf_documents.sql
+│   └── ksf_documents_links.sql
 ├── includes/
 │   ├── documents_db.inc
 │   └── links_db.inc
