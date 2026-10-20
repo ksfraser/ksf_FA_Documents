@@ -226,7 +226,7 @@ This UAT Plan defines the user acceptance test cases for the ksf_FA_Documents mo
 **Objective**: Verify existing attachments from v1.x remain accessible
 
 **Test Scenario**:
-1. Open a document that was migrated from v1.x (has legacy fa_document_attachments records)
+1. Open a document that was migrated from v1.x (has legacy ksf_documents_attachments records)
 2. View attachments list
 
 **Expected Result**: Legacy attachments appear alongside new attachments
@@ -439,7 +439,7 @@ This UAT Plan defines the user acceptance test cases for the ksf_FA_Documents mo
 **Acceptance Criteria**:
 - [ ] Document appears in customer profile
 - [ ] Link persists through updates
-- [ ] Customer ID stored in fa_document_links
+- [ ] Customer ID stored in ksf_documents_links
 
 ---
 
@@ -590,16 +590,16 @@ This UAT Plan defines the user acceptance test cases for the ksf_FA_Documents mo
 - [ ] Module installs correctly
 - [ ] Menu items appear
 - [ ] Permissions work with FA roles
-- [ ] Database tables created (fa_documents, fa_document_links, etc.)
+- [ ] Database tables created (ksf_documents, ksf_documents_links, etc.)
 
 ### 3.2 ksf_FA_Attachments Integration (NEW)
 - [ ] Upload attachment creates record in fa_attachments
 - [ ] source_type = 'document' and source_id = document.id
-- [ ] Legacy fa_document_attachments still readable
+- [ ] Legacy ksf_documents_attachments still readable
 - [ ] Module deactivates gracefully if ksf_FA_Attachments is missing
 
 ### 3.3 CRM Integration
-- [ ] Documents link to customers via fa_document_links
+- [ ] Documents link to customers via ksf_documents_links
 - [ ] Customer view shows documents
 - [ ] CRM profile displays correctly
 
@@ -611,7 +611,7 @@ This UAT Plan defines the user acceptance test cases for the ksf_FA_Documents mo
 ### 3.5 Task System Integration
 - [ ] Tasks created for acknowledgments
 - [ ] Task completion updates status
-- [ ] Tasks linked to documents via fa_document_links
+- [ ] Tasks linked to documents via ksf_documents_links
 
 ## 4. Performance Testing
 

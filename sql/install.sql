@@ -1,7 +1,13 @@
 -- Documents module database schema for FrontAccounting
 
 -- Main documents table
-CREATE TABLE IF NOT EXISTS `0_fa_documents` (
+ALTER TABLE IF EXISTS `0_fa_documents` RENAME TO `0_ksf_documents`;
+ALTER TABLE IF EXISTS `0_fa_document_attachments` RENAME TO `0_ksf_documents_attachments`;
+ALTER TABLE IF EXISTS `0_fa_document_acknowledgments` RENAME TO `0_ksf_documents_acknowledgments`;
+ALTER TABLE IF EXISTS `0_fa_document_versions` RENAME TO `0_ksf_documents_versions`;
+ALTER TABLE IF EXISTS `0_fa_document_links` RENAME TO `0_ksf_documents_links`;
+
+CREATE TABLE IF NOT EXISTS `0_ksf_documents` (
     `id` INT(11) NOT NULL AUTO_INCREMENT,
     `title` VARCHAR(255) NOT NULL,
     `type` ENUM('Policy','Contract','Form','Training','Handbook','Other') NOT NULL DEFAULT 'Other',
@@ -23,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `0_fa_documents` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Document attachments (FA native)
-CREATE TABLE IF NOT EXISTS `0_fa_document_attachments` (
+CREATE TABLE IF NOT EXISTS `0_ksf_documents_attachments` (
     `id` INT(11) NOT NULL AUTO_INCREMENT,
     `doc_id` INT(11) NOT NULL,
     `file_path` VARCHAR(500) NOT NULL,
@@ -35,11 +41,11 @@ CREATE TABLE IF NOT EXISTS `0_fa_document_attachments` (
     `active` TINYINT(1) NOT NULL DEFAULT 1,
     PRIMARY KEY (`id`),
     KEY `doc_id` (`doc_id`,`active`),
-    FOREIGN KEY (`doc_id`) REFERENCES `0_fa_documents`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`doc_id`) REFERENCES `0_ksf_documents`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Document acknowledgments
-CREATE TABLE IF NOT EXISTS `0_fa_document_acknowledgments` (
+CREATE TABLE IF NOT EXISTS `0_ksf_documents_acknowledgments` (
     `id` INT(11) NOT NULL AUTO_INCREMENT,
     `doc_id` INT(11) NOT NULL,
     `user_id` INT(11) NOT NULL,
@@ -47,11 +53,11 @@ CREATE TABLE IF NOT EXISTS `0_fa_document_acknowledgments` (
     `acknowledged_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `doc_employee` (`doc_id`,`employee_id`),
-    FOREIGN KEY (`doc_id`) REFERENCES `0_fa_documents`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`doc_id`) REFERENCES `0_ksf_documents`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Document versions
-CREATE TABLE IF NOT EXISTS `0_fa_document_versions` (
+CREATE TABLE IF NOT EXISTS `0_ksf_documents_versions` (
     `id` INT(11) NOT NULL AUTO_INCREMENT,
     `doc_id` INT(11) NOT NULL,
     `version` VARCHAR(20) NOT NULL,
@@ -61,11 +67,11 @@ CREATE TABLE IF NOT EXISTS `0_fa_document_versions` (
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `doc_id` (`doc_id`),
-    FOREIGN KEY (`doc_id`) REFERENCES `0_fa_documents`(`id`) ON DELETE CASCADE
+    FOREIGN KEY (`doc_id`) REFERENCES `0_ksf_documents`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Module version
-INSERT INTO `fa_modules` (`name`, `version`, `enabled`, `installed`) VALUES
+INSERT INTO `0_ksf_modules` (`name`, `version`, `enabled`, `installed`) VALUES
 ('Documents', '1.0.0', 1, NOW())
 ON DUPLICATE KEY UPDATE `version` = '1.0.0', `installed` = NOW();
 
@@ -73,16 +79,16 @@ ON DUPLICATE KEY UPDATE `version` = '1.0.0', `installed` = NOW();
 -- v2.0.0: Multi-entity links, ACL, shared attachments
 -- ============================================================
 
--- Add ACL columns to fa_documents
-ALTER TABLE `0_fa_documents`
+-- Add ACL columns to ksf_documents
+ALTER TABLE `0_ksf_documents`
     ADD COLUMN `owner` INT NULL COMMENT 'FK to FA users.owner',
     ADD COLUMN `group_id` INT NULL COMMENT 'Access group ID for RBAC',
     ADD INDEX `idx_owner` (`owner`);
 
 -- Multi-entity link table (replaces old entity_type/entity_id columns)
-CREATE TABLE IF NOT EXISTS `0_fa_document_links` (
+CREATE TABLE IF NOT EXISTS `0_ksf_documents_links` (
     `id`            INT           NOT NULL AUTO_INCREMENT,
-    `doc_id`        INT           NOT NULL COMMENT 'FK to fa_documents.id',
+    `doc_id`        INT           NOT NULL COMMENT 'FK to ksf_documents.id',
     `entity_type`   VARCHAR(64)   NOT NULL COMMENT 'Entity type (debtor, employee, project, etc.)',
     `entity_id`     INT           NOT NULL COMMENT 'FK to entity record',
     `created_at`    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -93,10 +99,10 @@ CREATE TABLE IF NOT EXISTS `0_fa_document_links` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   COMMENT='Multi-entity links for documents';
 
--- Migration data: copy existing entity_type/entity_id to fa_document_links
-INSERT INTO `0_fa_document_links` (doc_id, entity_type, entity_id, created_at)
+-- Migration data: copy existing entity_type/entity_id to ksf_documents_links
+INSERT INTO `0_ksf_documents_links` (doc_id, entity_type, entity_id, created_at)
     SELECT id, entity_type, entity_id, created_at
-    FROM `0_fa_documents`
+    FROM `0_ksf_documents`
     WHERE entity_type IS NOT NULL AND entity_id IS NOT NULL
     AND entity_type != '' AND entity_id != 0
 ON DUPLICATE KEY UPDATE id = id;

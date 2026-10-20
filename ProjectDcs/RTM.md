@@ -74,7 +74,7 @@
 | FR-DM-010 | TC-ACL-003 | User outside owner/group denied access |
 | FR-DM-011 | TC-AT-001 | Upload attachment via ksf_FA_Attachments; verify fa_attachments record |
 | FR-DM-012 | TC-AT-002 | List attachments; verify merged list from fa_attachments + legacy |
-| FR-DM-013 | TC-AT-003 | Access legacy fa_document_attachments data (read-only) |
+| FR-DM-013 | TC-AT-003 | Access legacy ksf_documents_attachments data (read-only) |
 
 ---
 

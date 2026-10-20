@@ -125,7 +125,7 @@ End-to-end testing of complete workflows:
 1. Delete document (soft delete)
 2. Verify status changed to Archived
 3. Verify version history retained
-4. Verify entity links preserved in fa_document_links
+4. Verify entity links preserved in ksf_documents_links
 
 **Expected Result**: Document archived, not permanently deleted, links preserved
 
@@ -174,7 +174,7 @@ End-to-end testing of complete workflows:
 1. Link document to customer (entity_type='customer', entity_id=1)
 2. Link same document to project (entity_type='project', entity_id=5)
 3. Link same document to task (entity_type='task', entity_id=10)
-4. Verify three records in fa_document_links
+4. Verify three records in ksf_documents_links
 5. Verify duplicate link attempt is rejected
 
 **Expected Result**: Document linked to all three entities; duplicate rejected
@@ -293,12 +293,12 @@ End-to-end testing of complete workflows:
 ---
 
 #### TC-AT-002: List Attachments
-**Preconditions**: Document has attachments in both fa_attachments (new) and fa_document_attachments (legacy)
+**Preconditions**: Document has attachments in both fa_attachments (new) and ksf_documents_attachments (legacy)
 
 **Test Steps**:
 1. List attachments for document
 2. Verify new attachment from fa_attachments appears
-3. Verify legacy attachment from fa_document_attachments appears
+3. Verify legacy attachment from ksf_documents_attachments appears
 4. Verify combined list is merged correctly
 
 **Expected Result**: All attachments (new + legacy) listed
@@ -310,11 +310,11 @@ End-to-end testing of complete workflows:
 ---
 
 #### TC-AT-003: Legacy Attachment Read-Only
-**Preconditions**: Document with legacy attachment in fa_document_attachments
+**Preconditions**: Document with legacy attachment in ksf_documents_attachments
 
 **Test Steps**:
 1. Read legacy attachment metadata
-2. Attempt to write to fa_document_attachments (should be blocked)
+2. Attempt to write to ksf_documents_attachments (should be blocked)
 3. Verify new uploads always go to fa_attachments
 
 **Expected Result**: Legacy data readable; new writes go to fa_attachments
@@ -639,7 +639,7 @@ End-to-end testing of complete workflows:
 - Various version counts
 - Multiple acknowledgment statuses
 - Sample entities (customers, projects, tasks, employees)
-- Mix of new (fa_attachments) and legacy (fa_document_attachments) attachments
+- Mix of new (fa_attachments) and legacy (ksf_documents_attachments) attachments
 
 ### 5.2 Test Data Cleanup
 - Use database transactions for rollback

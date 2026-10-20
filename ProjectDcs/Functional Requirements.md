@@ -147,7 +147,7 @@ The Documents module provides:
 ## 3. Multi-Entity Linking
 
 ### 3.1 Link Document to Entities (FR-DM-008) (NEW)
-**Requirement**: The system shall allow a document to be linked to multiple entities across different FA modules via the `fa_document_links` table.
+**Requirement**: The system shall allow a document to be linked to multiple entities across different FA modules via the `ksf_documents_links` table.
 
 **Features**:
 - Link a document to any entity by type + id
@@ -350,11 +350,11 @@ The Documents module provides:
 ---
 
 ### 8.2 List Attachments from Shared Service (FR-DM-012) (NEW)
-**Requirement**: The system shall list all attachments for a document, merging results from both the new `fa_attachments` table and the legacy `fa_document_attachments` table.
+**Requirement**: The system shall list all attachments for a document, merging results from both the new `fa_attachments` table and the legacy `ksf_documents_attachments` table.
 
 **Features**:
 - Query fa_attachments WHERE source_type='document' AND source_id=?
-- Query legacy fa_document_attachments WHERE document_id=?
+- Query legacy ksf_documents_attachments WHERE document_id=?
 - Merge and return combined list
 - Display attachment metadata (filename, size, type, date, version)
 
@@ -365,7 +365,7 @@ The Documents module provides:
 ---
 
 ### 8.3 Legacy Attachment Backward Compatibility (FR-DM-013)
-**Requirement**: The system shall maintain read-only access to attachments stored in the legacy `fa_document_attachments` table.
+**Requirement**: The system shall maintain read-only access to attachments stored in the legacy `ksf_documents_attachments` table.
 
 **Features**:
 - Legacy attachments are readable
@@ -385,7 +385,7 @@ The Documents module provides:
 **Requirement**: The system shall integrate with CRM module via entity links.
 
 **Features**:
-- Link documents to customers (via fa_document_links)
+- Link documents to customers (via ksf_documents_links)
 - Retrieve customer document history
 - Customer document access via CRM profile
 
@@ -399,7 +399,7 @@ The Documents module provides:
 **Requirement**: The system shall integrate with HRM module.
 
 **Features**:
-- Link documents to employee records (via fa_document_links)
+- Link documents to employee records (via ksf_documents_links)
 - Retrieve employee document history
 - Employee document access via HRM
 
@@ -415,7 +415,7 @@ The Documents module provides:
 **Features**:
 - Create acknowledgment tasks
 - Track task completion
-- Link tasks to documents via fa_document_links
+- Link tasks to documents via ksf_documents_links
 - Task time tracking
 
 **Priority**: Medium

@@ -292,7 +292,7 @@ function link_document(int $doc_id, string $entity_type, int $entity_id): int
     ]));
     
     global $db;
-    $sql = "INSERT IGNORE INTO " . TB_PREF . "fa_document_links
+    $sql = "INSERT IGNORE INTO " . TB_PREF . "ksf_documents_links
         (doc_id, entity_type, entity_id)
         VALUES (" . intval($doc_id) . ",
                 " . $db->escape($entity_type) . ",
@@ -320,7 +320,7 @@ function unlink_document(int $doc_id, string $entity_type, int $entity_id): void
     ]));
     
     global $db;
-    $sql = "DELETE FROM " . TB_PREF . "fa_document_links
+    $sql = "DELETE FROM " . TB_PREF . "ksf_documents_links
         WHERE doc_id = " . intval($doc_id) . "
         AND entity_type = " . $db->escape($entity_type) . "
         AND entity_id = " . intval($entity_id);
@@ -342,7 +342,7 @@ function get_document_linked_entities(int $doc_id): array
 {
     global $db;
     
-    $sql = "SELECT entity_type, entity_id FROM " . TB_PREF . "fa_document_links
+    $sql = "SELECT entity_type, entity_id FROM " . TB_PREF . "ksf_documents_links
         WHERE doc_id = " . intval($doc_id);
     
     $result = $db->query($sql);
@@ -452,7 +452,7 @@ function add_document_shared_attachment(int $doc_id, string $source_file, string
         }
     }
     
-    // Fallback: legacy fa_document_attachments
+    // Fallback: legacy ksf_documents_attachments
     return add_document_attachment($doc_id, $hookData['source_file'] ?? $source_file, $hookData['original_name'] ?? $original_name);
 }
 

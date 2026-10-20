@@ -53,8 +53,8 @@
 4. User optionally links document to entities (customers, projects, tasks, employees)
 5. User optionally uploads attachments via ksf_FA_Attachments
 6. User submits form
-7. System validates input, creates document record in fa_documents
-8. System creates entity link records in fa_document_links
+7. System validates input, creates document record in ksf_documents
+8. System creates entity link records in ksf_documents_links
 9. System processes attachment through AttachmentOperationsTrait -> fa_attachments
 10. System logs the upload
 
@@ -90,19 +90,19 @@
 5. User searches/picks the specific entity by name or ID
 6. User clicks "Add Link"
 7. System validates combination is not a duplicate
-8. System inserts record into fa_document_links
+8. System inserts record into ksf_documents_links
 9. User repeats steps 4-8 for additional entities
 10. User clicks "Save" or "Done"
 11. System persists all changes
 
 **Postconditions**:
-- fa_document_links records created for each new link
+- ksf_documents_links records created for each new link
 - Link activity logged to audit trail
 
 **Alternate Flows**:
 - Duplicate link attempt: system shows warning, ignores duplicate
 - Entity not found: system shows error, does not create link
-- Unlink: user clicks remove icon next to existing link, system deletes fa_document_links record
+- Unlink: user clicks remove icon next to existing link, system deletes ksf_documents_links record
 
 **Cross-Reference**: FR-DM-008, FR-DM-009, BR-DOC-003
 
@@ -124,7 +124,7 @@
 5. Admin selects a new group from FA security group list
 6. Admin clicks "Save"
 7. System validates that selected owner and group exist
-8. System updates fa_documents.owner and fa_documents.group_id
+8. System updates ksf_documents.owner and ksf_documents.group_id
 9. System logs the permission change with old and new values
 
 **Postconditions**:
@@ -152,7 +152,7 @@
 **Steps**:
 1. User opens document view page
 2. User clicks "Attachments" tab or section
-3. System displays current attachments (merged from fa_attachments and legacy fa_document_attachments)
+3. System displays current attachments (merged from fa_attachments and legacy ksf_documents_attachments)
 4. User clicks "Upload Attachment"
 5. User selects a file from local machine
 6. User optionally enters a description
@@ -172,7 +172,7 @@
 - Invalid file type: error message, no record created
 - File exceeds size limit: error message, no record created
 - ksf_FA_Attachments not available: error message, upload blocked
-- Legacy attachment viewing: old attachments from fa_document_attachments show in list but are read-only
+- Legacy attachment viewing: old attachments from ksf_documents_attachments show in list but are read-only
 
 **Cross-Reference**: FR-DM-011, FR-DM-012, FR-DM-013, BR-DOC-005
 

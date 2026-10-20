@@ -80,13 +80,13 @@ ksf_FA_Documents (FA Adapter)
 ---
 
 ### BR-DOC-005: Shared Attachment Service (NEW)
-**Description**: The system shall use the ksf_FA_Attachments module as the shared attachment service for new file uploads, while maintaining read-only backward compatibility with the legacy fa_document_attachments table.
+**Description**: The system shall use the ksf_FA_Attachments module as the shared attachment service for new file uploads, while maintaining read-only backward compatibility with the legacy ksf_documents_attachments table.
 
 **Rationale**: Eliminate redundant attachment storage across modules by centralizing file management in ksf_FA_Attachments, while preserving existing document attachments.
 
 **Acceptance Criteria**:
 - New document attachments are stored in `fa_attachments` with `source_type='document'`
-- Legacy `fa_document_attachments` data remains accessible (read-only)
+- Legacy `ksf_documents_attachments` data remains accessible (read-only)
 - Each document version can have its own attachments
 - Attachment operations (upload, list, delete) are delegated to AttachmentOperationsTrait
 

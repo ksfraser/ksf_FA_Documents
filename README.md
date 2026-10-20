@@ -63,9 +63,9 @@ Access via the Documents menu after installation:
 
 | Table | Description |
 |-------|-------------|
-| `fa_documents` | Document records with metadata |
-| `fa_document_versions` | Version history |
-| `fa_document_acknowledgments` | Acknowledgment tracking |
+| `ksf_documents` | Document records with metadata |
+| `ksf_documents_versions` | Version history |
+| `ksf_documents_acknowledgments` | Acknowledgment tracking |
 
 ### Reference Tables
 

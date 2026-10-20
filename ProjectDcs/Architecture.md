@@ -57,7 +57,7 @@ ksf_FA_Documents/
 │   └── settings.php              # Module settings
 ├── sql/
 │   ├── install.sql               # Database schema
-│   └── migrate_v1_to_v2.sql      # Migration: entity columns -> fa_document_links
+│   └── migrate_v1_to_v2.sql      # Migration: entity columns -> ksf_documents_links
 ├── src/                          # Additional source files
 ├── tests/                        # Unit and integration tests
 └── ProjectDcs/                   # Documentation
@@ -91,7 +91,7 @@ function fa_documents_get_menu_items()     // Returns navigation menu
 
 ### 3.2 hooks.php
 Handles module lifecycle operations:
-- Database installation (creates fa_documents, fa_document_links, preserves legacy fa_document_attachments)
+- Database installation (creates ksf_documents, ksf_documents_links, preserves legacy ksf_documents_attachments)
 - Permission registration
 - Menu registration
 - Hook registration
@@ -100,7 +100,7 @@ Handles module lifecycle operations:
 ### 3.3 documents_db.inc
 Database abstraction layer with functions for:
 - Document CRUD operations (with ACL-aware filtering)
-- Version management (fa_document_versions)
+- Version management (ksf_documents_versions)
 - Acknowledgment tracking
 - Expiry management
 - ACL-aware queries (WHERE owner = ? OR group_id = ?)
@@ -134,9 +134,9 @@ All operations delegate to ksf_FA_Attachments with `source_type = 'document'` an
 
 ### 4.1 Core Tables
 
-#### fa_documents
+#### ksf_documents
 ```sql
-CREATE TABLE fa_documents (
+CREATE TABLE ksf_documents (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     type VARCHAR(50) NOT NULL,
@@ -163,9 +163,9 @@ CREATE TABLE fa_documents (
 );
 ```
 
-#### fa_document_links (NEW in v2.0)
+#### ksf_documents_links (NEW in v2.0)
 ```sql
-CREATE TABLE fa_document_links (
+CREATE TABLE ksf_documents_links (
     id INT AUTO_INCREMENT PRIMARY KEY,
     doc_id INT NOT NULL,
     entity_type VARCHAR(50) NOT NULL,  -- e.g. 'customer', 'project', 'task', 'training_course', 'employee'
@@ -177,9 +177,9 @@ CREATE TABLE fa_document_links (
 );
 ```
 
-#### fa_document_versions
+#### ksf_documents_versions
 ```sql
-CREATE TABLE fa_document_versions (
+CREATE TABLE ksf_documents_versions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     document_id INT NOT NULL,
     version VARCHAR(20) NOT NULL,
@@ -191,9 +191,9 @@ CREATE TABLE fa_document_versions (
 );
 ```
 
-#### fa_document_acknowledgments
+#### ksf_documents_acknowledgments
 ```sql
-CREATE TABLE fa_document_acknowledgments (
+CREATE TABLE ksf_documents_acknowledgments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     document_id INT NOT NULL,
     user_id INT NOT NULL,
@@ -229,7 +229,7 @@ CREATE TABLE fa_document_types (
 CREATE TABLE fa_attachments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     source_type VARCHAR(50) NOT NULL,   -- 'document'
-    source_id INT NOT NULL,             -- fa_documents.id
+    source_id INT NOT NULL,             -- ksf_documents.id
     filename VARCHAR(255) NOT NULL,
     original_name VARCHAR(255),
     mime_type VARCHAR(127),
@@ -241,11 +241,11 @@ CREATE TABLE fa_attachments (
 );
 ```
 
-#### fa_document_attachments (LEGACY, read-only in v2.0)
+#### ksf_documents_attachments (LEGACY, read-only in v2.0)
 ```sql
 -- Kept for backward compatibility with v1.x data
 -- New attachments use fa_attachments from ksf_FA_Attachments
-CREATE TABLE fa_document_attachments (
+CREATE TABLE ksf_documents_attachments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     document_id INT NOT NULL,
     filename VARCHAR(255) NOT NULL,
@@ -262,7 +262,7 @@ CREATE TABLE fa_document_attachments (
 ## 5. Multi-Entity Linking Architecture
 
 ### 5.1 Design
-Documents can be linked to any number of entities across FA modules simultaneously via the `fa_document_links` table. This replaces the legacy `entity_type`/`entity_id` columns on `fa_documents`.
+Documents can be linked to any number of entities across FA modules simultaneously via the `ksf_documents_links` table. This replaces the legacy `entity_type`/`entity_id` columns on `ksf_documents`.
 
 **Supported entity_type values**:
 | Entity Type | Source Module | Description |
@@ -295,7 +295,7 @@ $linksDb->replaceDocumentLinks($docId, [
 ```
 
 ### 5.3 Migration
-The migration script `sql/migrate_v1_to_v2.sql` reads existing `entity_type`/`entity_id` from `fa_documents` and inserts into `fa_document_links`, then marks the old columns as deprecated.
+The migration script `sql/migrate_v1_to_v2.sql` reads existing `entity_type`/`entity_id` from `ksf_documents` and inserts into `ksf_documents_links`, then marks the old columns as deprecated.
 
 ## 6. ACL Architecture
 
@@ -344,9 +344,9 @@ function document_acl_check(Document $doc, string $action): bool {
 
 ### 7.1 Architecture
 ```
-v1.x: fa_document_attachments (standalone table)
+v1.x: ksf_documents_attachments (standalone table)
 v2.0: fa_attachments (ksf_FA_Attachments shared service) via AttachmentOperationsTrait
-        └── legacy: fa_document_attachments (read-only, backward compat)
+        └── legacy: ksf_documents_attachments (read-only, backward compat)
 ```
 
 ### 7.2 AttachmentOperationsTrait
@@ -359,7 +359,7 @@ trait AttachmentOperationsTrait {
 
     public function getAttachments(Document $document): array {
         // Queries fa_attachments WHERE source_type='document' AND source_id=?
-        // Also queries fa_document_attachments for legacy data (read-only)
+        // Also queries ksf_documents_attachments for legacy data (read-only)
         // Merges both result sets
     }
 
@@ -370,7 +370,7 @@ trait AttachmentOperationsTrait {
 ```
 
 ### 7.3 Version-Level Attachments
-Each `fa_document_versions` row can have its own attachments via `fa_attachments` with `source_type='document_version'` and `source_id=$version_id`.
+Each `ksf_documents_versions` row can have its own attachments via `fa_attachments` with `source_type='document_version'` and `source_id=$version_id`.
 
 ## 8. Integration Architecture
 
@@ -386,7 +386,7 @@ add_hook('documents.event', $callback);
 
 2. **Database Table Prefix**: Using `TB_PREF` constant
 ```php
-$sql = "SELECT * FROM " . TB_PREF . "fa_documents";
+$sql = "SELECT * FROM " . TB_PREF . "ksf_documents";
 ```
 
 3. **Permission System**: Using FA's permission constants
@@ -409,7 +409,7 @@ file_input($name);
 
 ### 8.3 HRM Integration
 Documents module connects with HRM:
-- Employee records store document links via fa_document_links
+- Employee records store document links via ksf_documents_links
 - Employee documents accessible from HRM profile
 - HRM triggers document creation on hire
 
@@ -591,13 +591,13 @@ class DocumentRepository {
 ## 12. Migration Path (v1.x -> v2.0)
 
 ### 12.1 Schema Migrations
-1. Add `owner`, `group_id` columns to `fa_documents`
-2. Create `fa_document_links` table
-3. Migrate existing `entity_type`/`entity_id` data to `fa_document_links`
-4. Keep `fa_document_attachments` as-is (read-only)
+1. Add `owner`, `group_id` columns to `ksf_documents`
+2. Create `ksf_documents_links` table
+3. Migrate existing `entity_type`/`entity_id` data to `ksf_documents_links`
+4. Keep `ksf_documents_attachments` as-is (read-only)
 
 ### 12.2 Code Migrations
-1. Replace all direct `fa_document_attachments` writes with `AttachmentOperationsTrait`
+1. Replace all direct `ksf_documents_attachments` writes with `AttachmentOperationsTrait`
 2. Replace single-entity column reads with `links_db.inc` methods
 3. Add ACL checks to all DocumentService methods
 
@@ -611,8 +611,8 @@ Key indexes on:
 - `created_at` - Date range queries
 - `owner` - ACL filtering
 - `group_id` - ACL filtering
-- `fa_document_links (doc_id)` - Link lookups
-- `fa_document_links (entity_type, entity_id)` - Entity lookups
+- `ksf_documents_links (doc_id)` - Link lookups
+- `ksf_documents_links (entity_type, entity_id)` - Entity lookups
 
 ### 13.2 Query Optimization
 - Pagination for large datasets
