@@ -70,11 +70,6 @@ CREATE TABLE IF NOT EXISTS `0_ksf_documents_versions` (
     FOREIGN KEY (`doc_id`) REFERENCES `0_ksf_documents`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Module version
-INSERT INTO `0_ksf_modules` (`name`, `version`, `enabled`, `installed`) VALUES
-('Documents', '1.0.0', 1, NOW())
-ON DUPLICATE KEY UPDATE `version` = '1.0.0', `installed` = NOW();
-
 -- ============================================================
 -- v2.0.0: Multi-entity links, ACL, shared attachments
 -- ============================================================
